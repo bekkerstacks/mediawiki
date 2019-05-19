@@ -1,0 +1,64 @@
+version: "3.4"
+
+services:
+  mysql:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=mediawiki
+      - MYSQL_USER=mediawiki
+      - MYSQL_PASSWORD=mediawiki
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - appnet
+    entrypoint: ['/entrypoint.sh', '--character-set-server=utf8', '--collation-server=utf8_general_ci']
+
+  mediawiki2:
+    image: local-mediawiki:latest
+    networks:
+      - appnet
+      - public
+    environment:
+      - MEDIAWIKI_DB_TYPE=mysql
+      - MEDIAWIKI_DB_HOST=mysql
+      - MEDIAWIKI_DB_USER=mediawiki
+      - MEDIAWIKI_DB_PASSWORD=mediawiki
+      - MEDIAWIKI_DB_NAME=mediawiki
+      - MEDIAWIKI_SITE_SERVER=https://mediawiki.${DOMAIN-localhost}
+      - MEDIAWIKI_SITE_NAME="Knowledge Base"
+      - MEDIAWIKI_SITE_LANG=en
+      - MEDIAWIKI_ADMIN_USER=admin
+      - MEDIAWIKI_ADMIN_PASS=admin
+      - MEDIAWIKI_UPDATE=true
+      - MEDIAWIKI_ENABLE_SSL=false
+    volumes:
+      - mw_data:/data
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - "traefik.backend.loadbalancer.sticky=false"
+        - "traefik.backend.loadbalancer.swarm=true"
+        - "traefik.backend=mediawiki"
+        - "traefik.docker.network=appnet"
+        - "traefik.entrypoints=https"
+        - "traefik.frontend.passHostHeader=true"
+        - "traefik.frontend.rule=Host:mediawiki.${DOMAIN:-localhost}"
+        - "traefik.port=80"
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 32M
+
+volumes:
+  db_data: {}
+  mw_data: {}
+
+networks:
+  appnet:
+    external: true
+  public:
+    external: true
