@@ -1,3 +1,4 @@
+# Credit: https://github.com/benhutchins/docker-mediawiki
 FROM php:5.6-apache
 
 EXPOSE 80 443
@@ -17,7 +18,7 @@ RUN set -x; \
 RUN pear install mail net_smtp
 RUN a2enmod rewrite
 
-COPY php.ini /usr/local/etc/php/conf.d/mediawiki.ini
+COPY php/php.ini /usr/local/etc/php/conf.d/mediawiki.ini
 COPY apache/mediawiki.conf /etc/apache2/
 RUN echo "Include /etc/apache2/mediawiki.conf" >> /etc/apache2/apache2.conf
 
