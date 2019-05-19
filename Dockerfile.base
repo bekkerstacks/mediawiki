@@ -1,0 +1,26 @@
+FROM php:5.6-apache
+
+EXPOSE 80 443
+
+RUN set -x; \
+    apt-get update \
+    && apt-get install -y --no-install-recommends \
+       gpg g++ libicu-dev libicu57 libpq-dev \
+       libzip-dev imagemagick netcat \
+    && ln -fs /usr/lib/x86_64-linux-gnu/libzip.so /usr/lib/ \
+    && docker-php-ext-install intl zip mbstring opcache fileinfo \
+    && docker-php-ext-install mysqli \
+    && docker-php-ext-install pgsql \
+    && apt-get purge -y --auto-remove libicu-dev libzip-dev g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pear install mail net_smtp
+RUN a2enmod rewrite
+
+COPY php.ini /usr/local/etc/php/conf.d/mediawiki.ini
+COPY apache/mediawiki.conf /etc/apache2/
+RUN echo "Include /etc/apache2/mediawiki.conf" >> /etc/apache2/apache2.conf
+
+COPY docker-entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["apache2-foreground"]
